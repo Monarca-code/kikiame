@@ -22,34 +22,44 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!formulario || !mensagem) return;
 
-    // Exige sessão válida.
-    try {
-        await account.get();
-    } catch (error) {
-        window.location.href = "login.html";
-        return;
-    }
-
-    // Exige que a conta pertença à equipa administrativa.
-    try {
-        const resultado = await teams.list({});
-        const ehAdministrador = (resultado.teams || []).some(
-            equipe => equipe.$id === "administradores"
-        );
-
-        if (!ehAdministrador) {
-            mensagem.textContent = "Acesso reservado à equipa administradora.";
-            formulario.querySelectorAll("input, textarea, select, button").forEach(
-                elemento => elemento.disabled = true
-            );
-            return;
-        }
-    } catch (error) {
-        console.error("Não foi possível validar a equipa:", error);
-        mensagem.textContent = "Não foi possível validar as permissões da conta.";
+    const bloquearFormulario = (texto) => {
+        mensagem.textContent = texto;
         formulario.querySelectorAll("input, textarea, select, button").forEach(
             elemento => elemento.disabled = true
         );
+    };
+
+    // A sessão e a identidade são obtidas diretamente do Appwrite.
+    let utilizador;
+    try {
+        utilizador = await account.get();
+    } catch (error) {
+        window.location.replace("login.html");
+        return;
+    }
+
+    // Confirma a membership da conta e o papel explícito "admin".
+    // Pertencer à equipa, por si só, não concede autorização para publicar.
+    try {
+        const resultado = await teams.listMemberships({
+            teamId: "administradores"
+        });
+
+        const membershipAdmin = (resultado.memberships || []).find(
+            membership =>
+                membership.userId === utilizador.$id &&
+                membership.confirm === true &&
+                Array.isArray(membership.roles) &&
+                membership.roles.includes("admin")
+        );
+
+        if (!membershipAdmin) {
+            bloquearFormulario("Acesso negado. Apenas administradores autorizados podem publicar notícias.");
+            return;
+        }
+    } catch (error) {
+        console.error("Falha ao validar o papel administrativo:", error);
+        bloquearFormulario("Não foi possível confirmar as permissões. Tenta novamente mais tarde.");
         return;
     }
 
