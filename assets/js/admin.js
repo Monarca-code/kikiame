@@ -1,223 +1,137 @@
-const SUPABASE_URL = "https://ftzvgmydvyobbwogxncw.supabase.co";
-const SUPABASE_KEY = "sb_publishable_wl2zt3O62TUxtH2YYQ0fRQ_S_ejPowN";
+import {
+    Client,
+    Account,
+    Teams,
+    TablesDB,
+    Storage,
+    ID
+} from "https://cdn.jsdelivr.net/npm/appwrite@17.0.0/+esm";
 
-const supabaseClient = supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
+const client = new Client()
+    .setEndpoint("https://cloud.appwrite.io/v1")
+    .setProject("6afaee080036fbc10c12");
 
-console.log("admin.js carregado");
-
+const account = new Account(client);
+const teams = new Teams(client);
+const tablesDB = new TablesDB(client);
+const storage = new Storage(client);
 
 document.addEventListener("DOMContentLoaded", async () => {
-
     const formulario = document.getElementById("form-noticia");
     const mensagem = document.getElementById("mensagem");
 
-    if (!formulario) {
-        console.error("ERRO: form-noticia não encontrado.");
-        return;
-    }
+    if (!formulario || !mensagem) return;
 
-    console.log("Formulário encontrado");
-
-
-    /* ================================
-       VERIFICAR LOGIN
-    ================================ */
-
-    const { data: usuarioData, error: usuarioError } =
-        await supabaseClient.auth.getUser();
-
-    if (usuarioError || !usuarioData.user) {
-
-        console.log("Utilizador não autenticado.");
-
+    // Exige sessão válida.
+    try {
+        await account.get();
+    } catch (error) {
         window.location.href = "login.html";
-
         return;
     }
 
-    console.log(
-        "Administrador autenticado:",
-        usuarioData.user.email
-    );
+    // Exige que a conta pertença à equipa administrativa.
+    try {
+        const resultado = await teams.list({});
+        const ehAdministrador = (resultado.teams || []).some(
+            equipe => equipe.$id === "administradores"
+        );
 
-
-    /* ================================
-       PUBLICAR
-    ================================ */
+        if (!ehAdministrador) {
+            mensagem.textContent = "Acesso reservado à equipa administradora.";
+            formulario.querySelectorAll("input, textarea, select, button").forEach(
+                elemento => elemento.disabled = true
+            );
+            return;
+        }
+    } catch (error) {
+        console.error("Não foi possível validar a equipa:", error);
+        mensagem.textContent = "Não foi possível validar as permissões da conta.";
+        formulario.querySelectorAll("input, textarea, select, button").forEach(
+            elemento => elemento.disabled = true
+        );
+        return;
+    }
 
     formulario.addEventListener("submit", async (event) => {
-
         event.preventDefault();
 
-        console.log("Botão publicar pressionado");
-
-
-        const titulo =
-            document.getElementById("titulo").value.trim();
-
-        const resumo =
-            document.getElementById("resumo").value.trim();
-
-        const conteudo =
-            document.getElementById("conteudo").value.trim();
-
-        const categoria =
-            document.getElementById("categoria").value;
-
-        const imagemInput =
-            document.getElementById("imagem");
-
+        const titulo = document.getElementById("titulo").value.trim();
+        const resumo = document.getElementById("resumo").value.trim();
+        const conteudo = document.getElementById("conteudo").value.trim();
+        const categoria = document.getElementById("categoria").value;
+        const imagemInput = document.getElementById("imagem");
 
         if (!titulo || !conteudo) {
-
-            mensagem.textContent =
-                "Preencha o título e o conteúdo.";
-
+            mensagem.textContent = "Preencha o título e o conteúdo.";
             return;
         }
 
+        mensagem.textContent = "A publicar...";
+        const botao = formulario.querySelector('button[type="submit"]');
+        if (botao) botao.disabled = true;
 
-        mensagem.textContent =
-            "A publicar...";
-
+        let ficheiroId = null;
 
         try {
-
             let imagemUrl = null;
 
+            if (imagemInput.files && imagemInput.files.length > 0) {
+                const arquivo = imagemInput.files[0];
 
-            /* ================================
-               IMAGEM
-            ================================ */
-
-            if (imagemInput.files.length > 0) {
-
-                const arquivo =
-                    imagemInput.files[0];
-
-                const extensao =
-                    arquivo.name.split(".").pop();
-
-                const nomeArquivo =
-                    `${Date.now()}.${extensao}`;
-
-
-                console.log(
-                    "Enviando imagem:",
-                    nomeArquivo
-                );
-
-
-                const { error: uploadError } =
-                    await supabaseClient.storage
-                        .from("noticias")
-                        .upload(
-                            nomeArquivo,
-                            arquivo,
-                            {
-                                cacheControl: "3600",
-                                upsert: false
-                            }
-                        );
-
-
-                if (uploadError) {
-
-                    console.error(
-                        "Erro no upload:",
-                        uploadError
-                    );
-
-                    mensagem.textContent =
-                        "Erro ao enviar a imagem.";
-
-                    return;
+                if (!arquivo.type.startsWith("image/")) {
+                    throw new Error("Selecione um ficheiro de imagem válido.");
                 }
 
+                ficheiroId = ID.unique();
 
-                const { data: urlData } =
-                    supabaseClient.storage
-                        .from("noticias")
-                        .getPublicUrl(nomeArquivo);
+                await storage.createFile({
+                    bucketId: "noticias",
+                    fileId: ficheiroId,
+                    file: arquivo
+                });
 
-
-                imagemUrl =
-                    urlData.publicUrl;
-
-
-                console.log(
-                    "Imagem enviada:",
-                    imagemUrl
-                );
+                imagemUrl = storage.getFileView({
+                    bucketId: "noticias",
+                    fileId: ficheiroId
+                }).toString();
             }
 
+            await tablesDB.createRow({
+                databaseId: "kikiame_db",
+                tableId: "noticias",
+                rowId: ID.unique(),
+                data: {
+                    titulo,
+                    resumo: resumo || null,
+                    conteudo,
+                    categoria,
+                    imagem_url: imagemUrl,
+                    data_publicacao: new Date().toISOString()
+                }
+            });
 
-            /* ================================
-               INSERIR NOTÍCIA
-            ================================ */
-
-            console.log(
-                "Enviando notícia para Supabase..."
-            );
-
-
-            const { data, error } =
-                await supabaseClient
-                    .from("noticias")
-                    .insert({
-                        titulo: titulo,
-                        resumo: resumo || null,
-                        conteudo: conteudo,
-                        categoria: categoria,
-                        imagem_url: imagemUrl,
-                        data_publicacao:
-                            new Date().toISOString()
-                    })
-                    .select();
-
-
-            if (error) {
-
-                console.error(
-                    "Erro Supabase:",
-                    error
-                );
-
-                mensagem.textContent =
-                    "Erro ao guardar a notícia.";
-
-                return;
-            }
-
-
-            console.log(
-                "NOTÍCIA PUBLICADA:",
-                data
-            );
-
-
-            mensagem.textContent =
-                "Notícia publicada com sucesso! ✅";
-
-
+            mensagem.textContent = "Notícia publicada com sucesso! ✅";
             formulario.reset();
 
+        } catch (erro) {
+            console.error("Erro ao publicar notícia no Appwrite:", erro);
+
+            // Se a imagem foi enviada mas a notícia falhou, remove o ficheiro órfão.
+            if (ficheiroId) {
+                try {
+                    await storage.deleteFile({
+                        bucketId: "noticias",
+                        fileId: ficheiroId
+                    });
+                } catch (erroRemocao) {
+                    console.error("Não foi possível remover a imagem não utilizada:", erroRemocao);
+                }
+            }
+
+            mensagem.textContent = erro?.message || "Ocorreu um erro ao publicar a notícia.";
+        } finally {
+            if (botao) botao.disabled = false;
         }
-
-        catch (erro) {
-
-            console.error(
-                "Erro inesperado:",
-                erro
-            );
-
-            mensagem.textContent =
-                "Ocorreu um erro inesperado.";
-        }
-
     });
-
 });
