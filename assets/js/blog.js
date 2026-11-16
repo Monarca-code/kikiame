@@ -2,10 +2,10 @@ import {
     Client,
     TablesDB,
     Query
-} from "https://cdn.jsdelivr.net/npm/appwrite@17.0.0/+esm";
+} from "https://cdn.jsdelivr.net/npm/appwrite@29.2.0/+esm";
 
 const client = new Client()
-    .setEndpoint("https://cloud.appwrite.io/v1")
+    .setEndpoint("https://syd.cloud.appwrite.io/v1")
     .setProject("6afaee080036fbc10c12");
 
 const tablesDB = new TablesDB(client);
