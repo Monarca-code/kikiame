@@ -26,17 +26,13 @@
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" autocomplete="username" placeholder="Seu email" value="geralkikiame01@gmail.com" required>
             </div>
-
             <div class="form-group">
                 <label for="password">Palavra-passe</label>
                 <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Sua palavra-passe" required>
             </div>
-
             <button type="submit" class="btn-orcamentos">
-                <i class="fa-solid fa-right-to-bracket"></i>
-                Entrar
+                <i class="fa-solid fa-right-to-bracket"></i> Entrar
             </button>
-
             <p id="mensagem" role="status" aria-live="polite"></p>
             <button type="button" id="mostrar-recuperacao" class="back-news">Definir nova palavra-passe</button>
         </form>
@@ -46,33 +42,28 @@
                 <label for="codigo-recuperacao">Código recebido por email</label>
                 <input type="text" id="codigo-recuperacao" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="Código de 6 dígitos" required>
             </div>
-
             <div class="form-group">
                 <label for="nova-password">Nova palavra-passe</label>
                 <input type="password" id="nova-password" name="novaPassword" autocomplete="new-password" minlength="8" placeholder="Mínimo de 8 caracteres" required>
             </div>
-
             <div class="form-group">
                 <label for="confirmar-password">Confirmar palavra-passe</label>
                 <input type="password" id="confirmar-password" name="confirmarPassword" autocomplete="new-password" minlength="8" placeholder="Repita a nova palavra-passe" required>
             </div>
-
             <button type="submit" class="btn-orcamentos">
-                <i class="fa-solid fa-key"></i>
-                Confirmar nova palavra-passe
+                <i class="fa-solid fa-key"></i> Confirmar nova palavra-passe
             </button>
             <p id="mensagem-recuperacao" role="status" aria-live="polite"></p>
             <button type="button" id="voltar-login" class="back-news">Voltar ao login</button>
         </form>
 
         <a href="index.html" class="back-news">
-            <i class="fa-solid fa-arrow-left"></i>
-            Página anterior
+            <i class="fa-solid fa-arrow-left"></i> Página anterior
         </a>
     </div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/appwrite@29.2.0"></script>
 <script type="module" src="assets/js/login.js"></script>
-<script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js"></script>
 </body>
 </html>
