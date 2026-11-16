@@ -450,3 +450,46 @@
     .news-toolbar { align-items: stretch; flex-direction: column; }
     .news-search { width: 100%; }
 }
+
+
+/* Menu mobile da página de notícias */
+.menu-toggle {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+}
+
+.menu-toggle:focus-visible,
+.menu-close:focus-visible {
+    outline: 2px solid #F58220;
+    outline-offset: 4px;
+}
+
+@media (max-width: 992px) {
+    .menu-toggle {
+        position: fixed;
+        top: 15px;
+        right: 18px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 100002;
+    }
+
+    .menu-overlay {
+        z-index: 100000;
+    }
+
+    .mobile-menu {
+        z-index: 100001;
+    }
+}
+
+@media (min-width: 993px) {
+    .menu-toggle,
+    .mobile-menu,
+    .menu-overlay {
+        display: none;
+    }
+}
