@@ -22,7 +22,7 @@
         </a>
 
         <ul class="nav-links">
-            <li><a href="#">Início</a></li>
+            <li><a href="index.html">Início</a></li>
             <li><a href="index.html#sobre">Sobre</a></li>
             <li><a href="index.html#projetos">Projectos</a></li>
             <li><a href="index.html#parceiros">Parceiros</a></li>
@@ -48,19 +48,27 @@
 </section>
 
 <section class="news-categories">
-    <div class="news-container">
-        <button class="category-filter active">Todas</button>
-        <button class="category-filter">Empresa</button>
-        <button class="category-filter">Projetos</button>
-        <button class="category-filter">Construção Civil</button>
-        <button class="category-filter">Gestão</button>
-        <button class="category-filter">Eventos</button>
+    <div class="news-container" id="category-filters" aria-label="Filtrar notícias">
+        <button class="category-filter active" type="button" data-category="Todas">Todas</button>
     </div>
 </section>
 
 <section class="news-section">
-    <div class="news-grid" id="news-grid">
-        <!-- As notícias serão carregadas automaticamente pelo Appwrite -->
+    <div class="news-container">
+        <div class="news-toolbar">
+            <div>
+                <span class="section-tag">ATUALIZAÇÕES</span>
+                <h2>Últimas notícias</h2>
+                <p id="news-count" aria-live="polite">A carregar notícias...</p>
+            </div>
+            <label class="news-search">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <input id="news-search" type="search" placeholder="Pesquisar notícias..." aria-label="Pesquisar notícias">
+            </label>
+        </div>
+        <div class="news-grid" id="news-grid" aria-live="polite">
+            <p class="news-loading">A carregar notícias...</p>
+        </div>
     </div>
 </section>
 
