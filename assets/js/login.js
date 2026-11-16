@@ -6,6 +6,17 @@ const client = new Client()
 
 const account = new Account(client);
 
+// Se já existir uma sessão válida neste navegador, abrir diretamente a área administrativa.
+// A sessão é gerida pelo Appwrite; não guardar palavras-passe no dispositivo.
+(async function restaurarSessao() {
+  try {
+    await account.get();
+    window.location.replace("admin.html");
+  } catch (_) {
+    // Sem sessão válida: manter o formulário de login visível.
+  }
+})();
+
 const formulario = document.getElementById("form-login");
 const mensagem = document.getElementById("mensagem");
 const botaoLogin = formulario.querySelector('button[type="submit"]');
