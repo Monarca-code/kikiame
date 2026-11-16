@@ -1,51 +1,28 @@
-const SUPABASE_URL = "https://ftzvgmydvyobbwogxncw.supabase.co";
+import { Client, Account } from "https://cdn.jsdelivr.net/npm/appwrite@17.0.0/+esm";
 
-const SUPABASE_KEY = "sb_publishable_wl2zt3O62TUxtH2YYQ0fRQ_S_ejPowN";
+const client = new Client()
+    .setEndpoint("https://cloud.appwrite.io/v1")
+    .setProject("6afaee080036fbc10c12");
 
-const supabaseClient = supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
-
+const account = new Account(client);
 
 const formulario = document.getElementById("form-login");
 const mensagem = document.getElementById("mensagem");
 
-
 formulario.addEventListener("submit", async (event) => {
-
     event.preventDefault();
 
-
     const email = document.getElementById("email").value.trim();
-
     const password = document.getElementById("password").value;
-
 
     mensagem.textContent = "A entrar...";
     mensagem.style.color = "";
 
-
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password
-    });
-
-
-    if (error) {
-
-        console.error("Erro de login:", error);
-
-        mensagem.textContent =
-            "Email ou palavra-passe incorretos.";
-
-        return;
+    try {
+        await account.createEmailPasswordSession({ email, password });
+        window.location.href = "admin.html";
+    } catch (error) {
+        console.error("Erro de login Appwrite:", error);
+        mensagem.textContent = "Email ou palavra-passe incorretos.";
     }
-
-
-    console.log("Login realizado:", data.user);
-
-
-    window.location.href = "admin.html";
-
 });
