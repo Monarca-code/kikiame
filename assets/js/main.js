@@ -46,40 +46,47 @@ const observer = new IntersectionObserver((entries) => {
 
 counters.forEach(counter => observer.observe(counter));
 /*=========================
-        LOADER
+        LOADER — NÃO BLOQUEANTE
+   A página é apresentada quando o HTML está pronto.
+   Imagens e recursos externos continuam em segundo plano.
 ==========================*/
 
-window.addEventListener("load", () => {
-
+(function () {
     const loader = document.getElementById("loader");
+    let revealed = false;
 
-    document.body.style.overflow = "hidden";
-
-    setTimeout(() => {
-
-        loader.classList.add("hide");
+    function revealPage() {
+        if (revealed) return;
+        revealed = true;
 
         document.body.classList.add("loaded");
-
         document.body.style.overflow = "";
 
-        AOS.init({
-
-            duration:1000,
-
-            once:true,
-
-            offset:120,
-
-            easing:"ease-in-out"
-
+        requestAnimationFrame(() => {
+            window.setTimeout(() => {
+                if (loader) loader.classList.add("hide");
+            }, 180);
         });
 
-        AOS.refresh();
+        if (window.AOS && typeof window.AOS.init === "function") {
+            window.AOS.init({
+                duration: 900,
+                once: true,
+                offset: 120,
+                easing: "ease-in-out"
+            });
+        }
+    }
 
-    },1200);
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", revealPage, { once: true });
+    } else {
+        revealPage();
+    }
 
-});
+    // Salvaguarda para nunca deixar o visitante preso no ecrã de carregamento.
+    window.setTimeout(revealPage, 2500);
+})();
 
 /*==========================
       NAVBAR SCROLL
