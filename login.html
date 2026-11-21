@@ -28,7 +28,10 @@
             </div>
             <div class="form-group">
                 <label for="password">Palavra-passe</label>
-                <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Sua palavra-passe" required>
+                <div class="password-field">
+                    <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Sua palavra-passe" required>
+                    <button type="button" class="toggle-password" data-password-target="password" aria-label="Mostrar palavra-passe" aria-pressed="false"><i class="fa-regular fa-eye" aria-hidden="true"></i></button>
+                </div>
             </div>
             <button type="submit" class="btn-orcamentos">
                 <i class="fa-solid fa-right-to-bracket"></i> Entrar
@@ -54,11 +57,17 @@
                 </div>
                 <div class="form-group">
                     <label for="nova-password">Nova palavra-passe</label>
-                    <input type="password" id="nova-password" name="novaPassword" autocomplete="new-password" minlength="8" placeholder="Mínimo de 8 caracteres" disabled required>
+                    <div class="password-field">
+                        <input type="password" id="nova-password" name="novaPassword" autocomplete="new-password" minlength="8" placeholder="Mínimo de 8 caracteres" disabled required>
+                        <button type="button" class="toggle-password" data-password-target="nova-password" aria-label="Mostrar palavra-passe" aria-pressed="false"><i class="fa-regular fa-eye" aria-hidden="true"></i></button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="confirmar-password">Confirmar palavra-passe</label>
-                    <input type="password" id="confirmar-password" name="confirmarPassword" autocomplete="new-password" minlength="8" placeholder="Repita a nova palavra-passe" disabled required>
+                    <div class="password-field">
+                        <input type="password" id="confirmar-password" name="confirmarPassword" autocomplete="new-password" minlength="8" placeholder="Repita a nova palavra-passe" disabled required>
+                        <button type="button" class="toggle-password" data-password-target="confirmar-password" aria-label="Mostrar palavra-passe" aria-pressed="false"><i class="fa-regular fa-eye" aria-hidden="true"></i></button>
+                    </div>
                 </div>
                 <button type="submit" id="confirmar-recuperacao" class="btn-orcamentos" disabled>
                     <i class="fa-solid fa-key"></i> Confirmar nova palavra-passe
