@@ -77,9 +77,18 @@ export default async function handler(req, res) {
         const tema = String(body.tema || "").trim();
         const contexto = String(body.contexto || "").trim();
         const categoria = String(body.categoria || "").trim();
+        const imagem = body.imagem && typeof body.imagem === "object" ? body.imagem : null;
+        const imagemMime = String(imagem?.mimeType || "");
+        const imagemData = String(imagem?.data || "");
 
-        if (tema.length < 5 || tema.length > 180) {
+        if (tema.length > 180 || (tema.length > 0 && tema.length < 5)) {
             return responder(res, 400, { error: "O tema deve ter entre 5 e 180 caracteres." });
+        }
+        if (!tema && !imagemData) {
+            return responder(res, 400, { error: "Envia uma imagem ou indica o tema da notícia." });
+        }
+        if (imagemData && (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(imagemMime) || !/^[A-Za-z0-9+/]+={0,2}$/.test(imagemData) || imagemData.length > 4_200_000)) {
+            return responder(res, 400, { error: "Imagem inválida ou demasiado grande. Usa JPG, PNG, WebP ou GIF até 3 MB." });
         }
         if (contexto.length > 5000) {
             return responder(res, 400, { error: "O contexto não pode ultrapassar 5.000 caracteres." });
@@ -112,7 +121,13 @@ Regras obrigatórias:
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    contents: [{ role: "user", parts: [{ text: prompt }] }],
+                    contents: [{
+                        role: "user",
+                        parts: [
+                            { text: prompt },
+                            ...(imagemData ? [{ inline_data: { mime_type: imagemMime, data: imagemData } }] : [])
+                        ]
+                    }],
                     generationConfig: {
                         responseMimeType: "application/json",
                         temperature: 0.55,
