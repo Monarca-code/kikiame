@@ -225,8 +225,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                     resumo: resumo || null,
                     conteudo,
                     categoria,
-                    imagem_url: imagemUrl,
-                    imagens_urls: JSON.stringify(imagensUrls),
+                    imagem_url: imagensUrls.length > 1
+                        ? `${imagemUrl}#kikiame-gallery=${encodeURIComponent(JSON.stringify(imagensUrls))}`
+                        : imagemUrl,
                     data_publicacao: new Date().toISOString()
                 }
             });
