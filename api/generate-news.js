@@ -100,15 +100,17 @@ export default async function handler(req, res) {
         const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
         const prompt = `És o redator editorial do blog institucional da KIKIAME, empresa angolana de Comércio Geral e Prestação de Serviços. Escreve em português claro, profissional e natural, adequado a leitores em Angola.
 
-Cria um RASCUNHO de notícia com base exclusivamente nas informações abaixo.
-Tema: ${tema}
-Categoria: ${categoria}
+Cria um RASCUNHO de notícia com base exclusivamente nas informações abaixo e na imagem anexada, se existir.
+Tema indicado: ${tema || "Não indicado; identifica o assunto principal na imagem."}
+Categoria pretendida: ${categoria}
 Informações confirmadas fornecidas pelo administrador: ${contexto || "Não foram fornecidos factos adicionais."}
+
+Se receberes uma imagem, analisa-a cuidadosamente: identifica apenas elementos visíveis, texto legível e informações explicitamente apresentadas. Em cartazes, utiliza apenas dados legíveis. Em fotografias, não deduzas datas, locais, nomes, causas, resultados ou acontecimentos que a imagem não comprove. Se faltarem factos essenciais, escreve um rascunho prudente e assinala que é necessária confirmação do administrador.
 
 Regras obrigatórias:
 - Não inventes datas, nomes, locais, números, clientes, contratos, resultados, citações, parcerias ou acontecimentos.
-- Se faltarem factos, escreve de forma geral e prudente; não apresentes suposições como factos.
-- Não afirmes que algo foi concluído, inaugurado ou realizado se isso não estiver confirmado no contexto.
+- Não apresentes suposições como factos.
+- Não afirmes que algo foi concluído, inaugurado ou realizado se isso não estiver confirmado.
 - Não menciones que o texto foi escrito por IA.
 - Produz um título objetivo, um resumo curto e um conteúdo estruturado em parágrafos.
 - Devolve apenas JSON válido, sem Markdown, com as propriedades: titulo, resumo, categoria, conteudo.
