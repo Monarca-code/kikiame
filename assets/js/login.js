@@ -25,6 +25,7 @@ const campoPassword = formulario.elements.namedItem("password");
 [campoEmail, campoPassword].forEach(campo => campo.addEventListener("input", () => {
   campo.removeAttribute("aria-invalid");
   mensagem.textContent = "";
+  mensagem.classList.remove("error-message");
 }));
 
 const formularioRecuperacao = document.getElementById("form-recuperacao");
@@ -58,6 +59,7 @@ document.getElementById("mostrar-recuperacao").addEventListener("click", () => {
   formulario.hidden = true;
   formularioRecuperacao.hidden = false;
   mensagemRecuperacao.textContent = "";
+  mensagemRecuperacao.classList.remove("error-message");
   recoveryUserId = null;
   ativarCamposConfirmacao(false);
 });
@@ -82,6 +84,7 @@ formulario.addEventListener("submit", async (event) => {
     return;
   }
 
+  mensagem.classList.remove("error-message");
   mensagem.textContent = "A validar as credenciais...";
   botaoLogin.disabled = true;
 
@@ -95,6 +98,9 @@ formulario.addEventListener("submit", async (event) => {
       : error.code === 429
         ? "Demasiadas tentativas. Aguarde alguns minutos antes de tentar novamente."
         : "Não foi possível iniciar sessão. Verifique a ligação e tente novamente.";
+    if (error.code === 401 || error.type === "user_invalid_credentials" || error.code === 429) {
+      mensagem.classList.add("error-message");
+    }
     if (error.code === 401 || error.type === "user_invalid_credentials") {
       campoPassword.setAttribute("aria-invalid", "true");
       campoPassword.focus();
@@ -137,6 +143,7 @@ botaoEnviarCodigo.addEventListener("click", async () => {
 
     if (error.code === 429) {
       mensagemRecuperacao.textContent = "Foram feitas demasiadas tentativas. Aguarde alguns minutos antes de tentar novamente.";
+      mensagemRecuperacao.classList.add("error-message");
     } else if (error.code === 400) {
       mensagemRecuperacao.textContent = "O email introduzido não é válido. Verifique e tente novamente.";
     } else {
@@ -176,6 +183,7 @@ formularioRecuperacao.addEventListener("submit", async (event) => {
   }
 
   botaoRecuperacao.disabled = true;
+  mensagemRecuperacao.classList.remove("error-message");
   mensagemRecuperacao.textContent = "A confirmar o código e atualizar a palavra-passe...";
 
   try {
