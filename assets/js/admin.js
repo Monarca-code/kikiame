@@ -19,17 +19,25 @@ const storage = new Storage(client);
 document.addEventListener("DOMContentLoaded", async () => {
     const formulario = document.getElementById("form-noticia");
     const mensagem = document.getElementById("mensagem");
+    const escolhaMetodo = document.getElementById("escolha-metodo");
+    const painelIA = document.getElementById("gerador-ia");
+    const botaoManual = document.getElementById("modo-manual");
+    const botaoIA = document.getElementById("modo-ia");
+    const botaoGerar = document.getElementById("gerar-noticia");
 
     if (!formulario || !mensagem) return;
 
-    const bloquearFormulario = (texto) => {
+    const mostrarMensagem = (texto, tipo = "") => {
         mensagem.textContent = texto;
-        formulario.querySelectorAll("input, textarea, select, button").forEach(
-            elemento => elemento.disabled = true
-        );
+        mensagem.className = tipo;
     };
 
-    // A sessão e a identidade são obtidas diretamente do Appwrite.
+    const bloquearAcesso = (texto) => {
+        mostrarMensagem(texto, "message-error");
+        document.querySelectorAll("#escolha-metodo button, #gerador-ia button, #form-noticia button")
+            .forEach(elemento => elemento.disabled = true);
+    };
+
     let utilizador;
     try {
         utilizador = await account.get();
@@ -38,13 +46,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // Confirma a membership da conta e o papel explícito "admin".
-    // Pertencer à equipa, por si só, não concede autorização para publicar.
     try {
-        const resultado = await teams.listMemberships({
-            teamId: "administradores"
-        });
-
+        const resultado = await teams.listMemberships({ teamId: "administradores" });
         const membershipAdmin = (resultado.memberships || []).find(
             membership =>
                 membership.userId === utilizador.$id &&
@@ -54,14 +57,89 @@ document.addEventListener("DOMContentLoaded", async () => {
         );
 
         if (!membershipAdmin) {
-            bloquearFormulario("Acesso negado. Apenas administradores autorizados podem publicar notícias.");
+            bloquearAcesso("Acesso negado. Apenas administradores autorizados podem publicar notícias.");
             return;
         }
     } catch (error) {
         console.error("Falha ao validar o papel administrativo:", error);
-        bloquearFormulario("Não foi possível confirmar as permissões. Tenta novamente mais tarde.");
+        bloquearAcesso("Não foi possível confirmar as permissões. Tenta novamente mais tarde.");
         return;
     }
+
+    const mostrarEscolha = () => {
+        escolhaMetodo.hidden = false;
+        painelIA.hidden = true;
+        formulario.hidden = true;
+        mostrarMensagem("");
+    };
+
+    botaoManual.addEventListener("click", () => {
+        escolhaMetodo.hidden = true;
+        painelIA.hidden = true;
+        formulario.hidden = false;
+        mostrarMensagem("");
+    });
+
+    botaoIA.addEventListener("click", () => {
+        escolhaMetodo.hidden = true;
+        painelIA.hidden = false;
+        formulario.hidden = true;
+        mostrarMensagem("");
+        document.getElementById("tema-ia").focus();
+    });
+
+    document.getElementById("voltar-metodos").addEventListener("click", mostrarEscolha);
+    document.getElementById("trocar-metodo").addEventListener("click", mostrarEscolha);
+
+    botaoGerar.addEventListener("click", async () => {
+        const tema = document.getElementById("tema-ia").value.trim();
+        const contexto = document.getElementById("contexto-ia").value.trim();
+        const categoria = document.getElementById("categoria-ia").value;
+
+        if (tema.length < 5) {
+            mostrarMensagem("Indica um tema mais específico (mínimo de 5 caracteres).", "message-error");
+            document.getElementById("tema-ia").focus();
+            return;
+        }
+
+        botaoGerar.disabled = true;
+        botaoGerar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> A gerar rascunho...';
+        mostrarMensagem("A IA está a preparar a notícia. Aguarda...", "message-info");
+
+        try {
+            // O JWT temporário prova a sessão Appwrite sem expor uma chave de servidor.
+            const jwtResult = await account.createJWT();
+            const resposta = await fetch("/api/generate-news", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${jwtResult.jwt}`
+                },
+                body: JSON.stringify({ tema, contexto, categoria })
+            });
+
+            const dados = await resposta.json().catch(() => ({}));
+            if (!resposta.ok) {
+                throw new Error(dados.error || "Não foi possível gerar a notícia.");
+            }
+
+            document.getElementById("titulo").value = dados.titulo || "";
+            document.getElementById("resumo").value = dados.resumo || "";
+            document.getElementById("conteudo").value = dados.conteudo || "";
+            document.getElementById("categoria").value = dados.categoria || categoria;
+
+            painelIA.hidden = true;
+            formulario.hidden = false;
+            mostrarMensagem("Rascunho gerado. Revê os factos, edita o texto e publica quando estiver pronto.", "message-success");
+            document.getElementById("titulo").focus();
+        } catch (erro) {
+            console.error("Erro ao gerar notícia com IA:", erro);
+            mostrarMensagem(erro.message || "Erro ao comunicar com o serviço de IA.", "message-error");
+        } finally {
+            botaoGerar.disabled = false;
+            botaoGerar.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Gerar rascunho';
+        }
+    });
 
     formulario.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -73,13 +151,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         const imagemInput = document.getElementById("imagem");
 
         if (!titulo || !conteudo) {
-            mensagem.textContent = "Preencha o título e o conteúdo.";
+            mostrarMensagem("Preenche o título e o conteúdo.", "message-error");
             return;
         }
 
-        mensagem.textContent = "A publicar...";
-        const botao = formulario.querySelector('button[type="submit"]');
-        if (botao) botao.disabled = true;
+        const botaoPublicar = formulario.querySelector('button[type="submit"]');
+        botaoPublicar.disabled = true;
+        mostrarMensagem("A publicar notícia...", "message-info");
 
         let ficheiroId = null;
 
@@ -88,13 +166,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (imagemInput.files && imagemInput.files.length > 0) {
                 const arquivo = imagemInput.files[0];
+                const tiposPermitidos = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
-                if (!arquivo.type.startsWith("image/")) {
-                    throw new Error("Selecione um ficheiro de imagem válido.");
+                if (!tiposPermitidos.includes(arquivo.type)) {
+                    throw new Error("Formato de imagem não suportado. Usa JPG, PNG, WebP ou GIF.");
+                }
+                if (arquivo.size > 8 * 1024 * 1024) {
+                    throw new Error("A imagem não pode ultrapassar 8 MB.");
                 }
 
                 ficheiroId = ID.unique();
-
                 await storage.createFile({
                     bucketId: "noticias",
                     fileId: ficheiroId,
@@ -121,27 +202,26 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             });
 
-            mensagem.textContent = "Notícia publicada com sucesso! ✅";
+            mostrarMensagem("Notícia publicada com sucesso! ✅", "message-success");
             formulario.reset();
-
+            document.getElementById("tema-ia").value = "";
+            document.getElementById("contexto-ia").value = "";
+            mostrarEscolha();
+            mostrarMensagem("Notícia publicada com sucesso! ✅", "message-success");
         } catch (erro) {
             console.error("Erro ao publicar notícia no Appwrite:", erro);
 
-            // Se a imagem foi enviada mas a notícia falhou, remove o ficheiro órfão.
             if (ficheiroId) {
                 try {
-                    await storage.deleteFile({
-                        bucketId: "noticias",
-                        fileId: ficheiroId
-                    });
+                    await storage.deleteFile({ bucketId: "noticias", fileId: ficheiroId });
                 } catch (erroRemocao) {
                     console.error("Não foi possível remover a imagem não utilizada:", erroRemocao);
                 }
             }
 
-            mensagem.textContent = erro?.message || "Ocorreu um erro ao publicar a notícia.";
+            mostrarMensagem(erro?.message || "Ocorreu um erro ao publicar a notícia.", "message-error");
         } finally {
-            if (botao) botao.disabled = false;
+            botaoPublicar.disabled = false;
         }
     });
 });
