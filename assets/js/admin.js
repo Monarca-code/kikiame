@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const tema = document.getElementById("tema-ia").value.trim();
         const contexto = document.getElementById("contexto-ia").value.trim();
         const imagemIA = document.getElementById("imagem-ia");
-        const ficheiroImagem = imagemIA.files?.[0] || null;
+        const ficheirosImagem = Array.from(imagemIA.files || []);
         const tiposImagem = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
         if (tema.length > 180 || (tema.length > 0 && tema.length < 5)) {
@@ -103,17 +103,25 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.getElementById("tema-ia").focus();
             return;
         }
-        if (!tema && !ficheiroImagem) {
+        if (!tema && ficheirosImagem.length === 0) {
             mostrarMensagem("Envia uma imagem ou indica o tema da notícia.", "message-error");
             imagemIA.focus();
             return;
         }
-        if (ficheiroImagem && !tiposImagem.includes(ficheiroImagem.type)) {
+        if (ficheirosImagem.length > 4) {
+            mostrarMensagem("Podes selecionar no máximo 4 imagens.", "message-error");
+            return;
+        }
+        if (ficheirosImagem.some(arquivo => !tiposImagem.includes(arquivo.type))) {
             mostrarMensagem("Formato não suportado. Usa JPG, PNG, WebP ou GIF.", "message-error");
             return;
         }
-        if (ficheiroImagem && ficheiroImagem.size > 3 * 1024 * 1024) {
-            mostrarMensagem("A imagem para análise não pode ultrapassar 3 MB.", "message-error");
+        if (ficheirosImagem.some(arquivo => arquivo.size > 700 * 1024)) {
+            mostrarMensagem("Cada imagem para análise deve ter no máximo 700 KB.", "message-error");
+            return;
+        }
+        if (ficheirosImagem.reduce((total, arquivo) => total + arquivo.size, 0) > 2.5 * 1024 * 1024) {
+            mostrarMensagem("O conjunto das imagens não pode ultrapassar 2,5 MB.", "message-error");
             return;
         }
 
@@ -133,15 +141,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                 body: JSON.stringify({
                     tema,
                     contexto,
-                    imagem: ficheiroImagem ? {
-                        mimeType: ficheiroImagem.type,
-                        data: await new Promise((resolve, reject) => {
-                            const reader = new FileReader();
-                            reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
-                            reader.onerror = () => reject(new Error("Não foi possível ler a imagem selecionada."));
-                            reader.readAsDataURL(ficheiroImagem);
-                        })
-                    } : null
+                    imagens: await Promise.all(ficheirosImagem.map(arquivo => new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve({ mimeType: arquivo.type, data: String(reader.result).split(",")[1] || "" });
+                        reader.onerror = () => reject(new Error(`Não foi possível ler a imagem ${arquivo.name}.`));
+                        reader.readAsDataURL(arquivo);
+                    })))
                 })
             });
 
@@ -155,10 +160,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.getElementById("conteudo").value = dados.conteudo || "";
             document.getElementById("categoria").value = dados.categoria || "";
 
-            // Reutiliza a imagem analisada como imagem principal da notícia.
-            if (ficheiroImagem) {
+            // Reutiliza todas as imagens analisadas no formulário de publicação.
+            if (ficheirosImagem.length) {
                 const transferencia = new DataTransfer();
-                transferencia.items.add(ficheiroImagem);
+                ficheirosImagem.forEach(arquivo => transferencia.items.add(arquivo));
                 document.getElementById("imagem").files = transferencia.files;
             }
 
@@ -193,34 +198,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         botaoPublicar.disabled = true;
         mostrarMensagem("A publicar notícia...", "message-info");
 
-        let ficheiroId = null;
+        const ficheirosIds = [];
 
         try {
             let imagemUrl = null;
-
-            if (imagemInput.files && imagemInput.files.length > 0) {
-                const arquivo = imagemInput.files[0];
-                const tiposPermitidos = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-
-                if (!tiposPermitidos.includes(arquivo.type)) {
-                    throw new Error("Formato de imagem não suportado. Usa JPG, PNG, WebP ou GIF.");
-                }
-                if (arquivo.size > 8 * 1024 * 1024) {
-                    throw new Error("A imagem não pode ultrapassar 8 MB.");
-                }
-
-                ficheiroId = ID.unique();
-                await storage.createFile({
-                    bucketId: "noticias",
-                    fileId: ficheiroId,
-                    file: arquivo
-                });
-
-                imagemUrl = storage.getFileView({
-                    bucketId: "noticias",
-                    fileId: ficheiroId
-                }).toString();
+            const imagensUrls = [];
+            const arquivosSelecionados = Array.from(imagemInput.files || []);
+            const tiposPermitidos = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+            if (arquivosSelecionados.length > 4) throw new Error("Podes publicar no máximo 4 imagens por notícia.");
+            for (const arquivo of arquivosSelecionados) {
+                if (!tiposPermitidos.includes(arquivo.type)) throw new Error("Formato de imagem não suportado. Usa JPG, PNG, WebP ou GIF.");
+                if (arquivo.size > 8 * 1024 * 1024) throw new Error(`A imagem ${arquivo.name} ultrapassa 8 MB.`);
+                const ficheiroId = ID.unique();
+                await storage.createFile({ bucketId: "noticias", fileId: ficheiroId, file: arquivo });
+                ficheirosIds.push(ficheiroId);
+                imagensUrls.push(storage.getFileView({ bucketId: "noticias", fileId: ficheiroId }).toString());
             }
+            imagemUrl = imagensUrls[0] || null;
 
             await tablesDB.createRow({
                 databaseId: "kikiame_db",
@@ -232,6 +226,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     conteudo,
                     categoria,
                     imagem_url: imagemUrl,
+                    imagens_urls: JSON.stringify(imagensUrls),
                     data_publicacao: new Date().toISOString()
                 }
             });
@@ -246,11 +241,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         } catch (erro) {
             console.error("Erro ao publicar notícia no Appwrite:", erro);
 
-            if (ficheiroId) {
+            for (const ficheiroId of ficheirosIds) {
                 try {
                     await storage.deleteFile({ bucketId: "noticias", fileId: ficheiroId });
                 } catch (erroRemocao) {
-                    console.error("Não foi possível remover a imagem não utilizada:", erroRemocao);
+                    console.error("Não foi possível remover uma imagem não utilizada:", erroRemocao);
                 }
             }
 
