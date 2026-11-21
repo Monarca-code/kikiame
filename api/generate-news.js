@@ -92,7 +92,7 @@ export default async function handler(req, res) {
         if (contexto.length > 5000) {
             return responder(res, 400, { error: "O contexto não pode ultrapassar 5.000 caracteres." });
         }
-        const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+        const model = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
         const prompt = `És o redator editorial do blog institucional da KIKIAME, empresa angolana de Comércio Geral e Prestação de Serviços. Escreve em português claro, profissional e natural, adequado a leitores em Angola.
 
 Cria um RASCUNHO de notícia com base exclusivamente nas informações abaixo e na imagem anexada, se existir.
