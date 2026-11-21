@@ -43,8 +43,9 @@
                 <p>Envia uma imagem, descreve o assunto ou utiliza os dois elementos. A IA gera todos os campos e seleciona a categoria adequada.</p>
             </div>
             <div class="form-group">
-                <label for="imagem-ia">Imagem de referência (opcional)</label>
-                <input type="file" id="imagem-ia" accept="image/jpeg,image/png,image/webp,image/gif">
+                <label for="imagem-ia">Imagens de referência (opcional)</label>
+                <input type="file" id="imagem-ia" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+                <small class="field-help">Seleciona até 4 imagens. A IA analisará todas em conjunto.</small>
                 <small class="field-help">Envia uma fotografia, cartaz ou captura de ecrã. A IA vai analisar a imagem e utilizá-la para criar a notícia.</small>
             </div>
             <div class="form-group">
@@ -94,9 +95,10 @@
                 </select>
             </div>
             <div class="form-group">
-                <label for="imagem">Imagem principal da notícia (opcional)</label>
-                <input type="file" id="imagem" accept="image/jpeg,image/png,image/webp,image/gif">
-                <small class="field-help">A imagem enviada ao assistente será automaticamente reutilizada aqui como imagem principal. Podes substituí-la antes de publicar.</small>
+                <label for="imagem">Imagens da notícia (opcional)</label>
+                <input type="file" id="imagem" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+                <small class="field-help">Seleciona até 4 imagens. A primeira será usada como imagem principal.</small>
+                <small class="field-help">As imagens enviadas ao assistente serão reutilizadas aqui. Podes adicionar ou remover imagens antes de publicar.</small>
             </div>
             <button type="submit" class="btn-orcamentos">
                 <i class="fa-solid fa-paper-plane"></i> Publicar notícia
