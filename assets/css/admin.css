@@ -398,3 +398,167 @@
         width: 100%;
     }
 }
+
+
+/* =========================================
+   AJUSTE COMPACTO — PUBLICAÇÃO DE NOTÍCIAS
+========================================= */
+
+.admin-page {
+    padding-top: 85px;
+    padding-bottom: 55px;
+}
+
+.admin-container {
+    max-width: 780px;
+    padding: 30px;
+}
+
+.admin-header {
+    margin-bottom: 22px;
+}
+
+.admin-header h1 {
+    font-size: clamp(26px, 4vw, 36px);
+}
+
+.method-section {
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.method-card {
+    min-height: 150px;
+    padding: 17px 18px;
+    gap: 8px;
+    border-radius: 12px;
+}
+
+.method-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 16px;
+}
+
+.method-card strong {
+    font-size: 15px;
+    line-height: 1.35;
+}
+
+.method-card > span:not(.method-icon) {
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.ai-panel {
+    gap: 14px;
+    padding: 19px;
+    border-radius: 13px;
+}
+
+.panel-heading h2,
+.editor-heading h2 {
+    font-size: 19px;
+}
+
+.form-group {
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 13px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    padding: 11px 13px;
+    font-size: 14px;
+    border-radius: 8px;
+}
+
+.form-group textarea {
+    min-height: 85px;
+}
+
+#form-noticia,
+#form-login {
+    gap: 15px;
+}
+
+#form-noticia button,
+#form-login button {
+    padding: 12px 17px;
+}
+
+.method-actions {
+    gap: 9px;
+}
+
+.btn-secondary,
+.btn-ai {
+    padding: 11px 16px;
+    font-size: 14px;
+}
+
+.field-help {
+    font-size: 11px;
+}
+
+.admin-container .back-news {
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .admin-page {
+        padding: 75px 14px 40px;
+    }
+
+    .admin-container {
+        padding: 24px 19px;
+    }
+}
+
+@media (max-width: 600px) {
+    .method-section {
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+    }
+
+    .method-card {
+        min-height: 145px;
+        padding: 13px;
+        gap: 7px;
+    }
+
+    .method-card strong {
+        font-size: 13px;
+    }
+
+    .method-card > span:not(.method-icon) {
+        font-size: 11px;
+    }
+
+    .method-card .method-action {
+        font-size: 11px;
+    }
+
+    .ai-panel {
+        padding: 15px;
+    }
+
+    .editor-heading {
+        gap: 8px;
+    }
+}
+
+@media (max-width: 380px) {
+    .method-section {
+        grid-template-columns: 1fr;
+    }
+
+    .method-card {
+        min-height: 120px;
+    }
+}
