@@ -570,3 +570,50 @@
     color: #dc2626;
     font-weight: 700;
 }
+
+
+/* Campo de palavra-passe com controlo de visibilidade */
+.password-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.password-field input {
+    width: 100%;
+    padding-right: 52px;
+}
+
+#form-login .password-field .toggle-password,
+#form-recuperacao .password-field .toggle-password {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #071B36;
+    font-size: 17px;
+    cursor: pointer;
+}
+
+#form-login .password-field .toggle-password:hover,
+#form-recuperacao .password-field .toggle-password:hover {
+    background: #eef2f7;
+    transform: translateY(-50%);
+    opacity: 1;
+}
+
+#form-login .password-field .toggle-password:focus-visible,
+#form-recuperacao .password-field .toggle-password:focus-visible {
+    outline: 2px solid #F58220;
+    outline-offset: 1px;
+}
