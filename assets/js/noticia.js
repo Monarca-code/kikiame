@@ -24,11 +24,16 @@ function formatarData(valor) {
 }
 
 function obterImagens(noticia) {
-    try {
-        const lista = JSON.parse(noticia.imagens_urls || "[]");
-        if (Array.isArray(lista)) return lista.map(urlImagemSegura).filter(Boolean);
-    } catch (_) {}
-    const antiga = urlImagemSegura(noticia.imagem_url);
+    const imagemPrincipal = String(noticia.imagem_url || "");
+    const marcador = "#kikiame-gallery=";
+    const posicao = imagemPrincipal.indexOf(marcador);
+    if (posicao >= 0) {
+        try {
+            const lista = JSON.parse(decodeURIComponent(imagemPrincipal.slice(posicao + marcador.length)));
+            if (Array.isArray(lista)) return lista.map(urlImagemSegura).filter(Boolean);
+        } catch (erro) { console.warn("Não foi possível ler a galeria da notícia:", erro); }
+    }
+    const antiga = urlImagemSegura(imagemPrincipal);
     return antiga ? [antiga] : [];
 }
 
