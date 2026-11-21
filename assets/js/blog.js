@@ -29,6 +29,15 @@ function formatarData(valor) {
     });
 }
 
+function obterImagens(noticia) {
+    try {
+        const lista = JSON.parse(noticia.imagens_urls || "[]");
+        if (Array.isArray(lista)) return lista.map(urlImagemSegura).filter(Boolean);
+    } catch (_) {}
+    const antiga = urlImagemSegura(noticia.imagem_url);
+    return antiga ? [antiga] : [];
+}
+
 function urlImagemSegura(valor) {
     const url = String(valor || "").trim();
     if (!url) return "";
@@ -114,7 +123,7 @@ function mostrarNoticias() {
         const resumo = escaparHTML(resumoOriginal.length > 170
             ? resumoOriginal.slice(0, 167).trimEnd() + "..."
             : resumoOriginal);
-        const imagem = urlImagemSegura(noticia.imagem_url);
+        const imagem = obterImagens(noticia)[0] || "";
         const media = imagem
             ? `<img src="${escaparHTML(imagem)}" alt="${titulo}" loading="lazy">`
             : '<div class="news-image-placeholder"><i class="fa-regular fa-image" aria-hidden="true"></i><span>KIKIAME</span></div>';
