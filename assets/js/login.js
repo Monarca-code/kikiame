@@ -20,6 +20,12 @@ const account = new Account(client);
 const formulario = document.getElementById("form-login");
 const mensagem = document.getElementById("mensagem");
 const botaoLogin = formulario.querySelector('button[type="submit"]');
+const campoEmail = formulario.elements.namedItem("email");
+const campoPassword = formulario.elements.namedItem("password");
+[campoEmail, campoPassword].forEach(campo => campo.addEventListener("input", () => {
+  campo.removeAttribute("aria-invalid");
+  mensagem.textContent = "";
+}));
 
 const formularioRecuperacao = document.getElementById("form-recuperacao");
 const mensagemRecuperacao = document.getElementById("mensagem-recuperacao");
@@ -84,9 +90,15 @@ formulario.addEventListener("submit", async (event) => {
     window.location.replace("admin.html");
   } catch (error) {
     console.error("Erro de login Appwrite:", error);
-    mensagem.textContent = error.code === 401
-      ? "Credenciais inválidas. Confirme o email e a palavra-passe."
-      : error.message || "Não foi possível iniciar sessão.";
+    mensagem.textContent = (error.code === 401 || error.type === "user_invalid_credentials")
+      ? "Email ou palavra-passe incorretos. Verifique a palavra-passe e confirme também o email da conta."
+      : error.code === 429
+        ? "Demasiadas tentativas. Aguarde alguns minutos antes de tentar novamente."
+        : "Não foi possível iniciar sessão. Verifique a ligação e tente novamente.";
+    if (error.code === 401 || error.type === "user_invalid_credentials") {
+      campoPassword.setAttribute("aria-invalid", "true");
+      campoPassword.focus();
+    }
   } finally {
     botaoLogin.disabled = false;
   }
