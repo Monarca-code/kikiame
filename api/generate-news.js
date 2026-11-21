@@ -117,6 +117,7 @@ Regras obrigatórias:
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                signal: AbortSignal.timeout(60000),
                 body: JSON.stringify({
                     contents: [{
                         role: "user",
@@ -174,6 +175,10 @@ Regras obrigatórias:
 
         return responder(res, 200, resultado);
     } catch (error) {
+        if (error?.name === "TimeoutError" || error?.name === "AbortError") {
+            console.error("Timeout ao aguardar resposta do Gemini:", error?.name || "timeout");
+            return responder(res, 504, { error: "A IA demorou demasiado tempo a responder. Tenta novamente dentro de alguns instantes." });
+        }
         console.error("Erro interno em /api/generate-news:", error);
         return responder(res, 500, { error: "Ocorreu um erro interno ao gerar a notícia." });
     }
