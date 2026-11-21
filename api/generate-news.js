@@ -97,7 +97,7 @@ export default async function handler(req, res) {
             return responder(res, 400, { error: "Seleciona uma categoria válida." });
         }
 
-        const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+        const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
         const prompt = `És o redator editorial do blog institucional da KIKIAME, empresa angolana de Comércio Geral e Prestação de Serviços. Escreve em português claro, profissional e natural, adequado a leitores em Angola.
 
 Cria um RASCUNHO de notícia com base exclusivamente nas informações abaixo e na imagem anexada, se existir.
