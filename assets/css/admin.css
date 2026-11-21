@@ -562,3 +562,11 @@
         min-height: 120px;
     }
 }
+
+
+/* Mensagens de erro no login e recuperação de palavra-passe */
+#mensagem.error-message,
+#mensagem-recuperacao.error-message {
+    color: #dc2626;
+    font-weight: 700;
+}
