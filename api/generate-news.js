@@ -92,7 +92,14 @@ export default async function handler(req, res) {
         if (contexto.length > 5000) {
             return responder(res, 400, { error: "O contexto não pode ultrapassar 5.000 caracteres." });
         }
-        const model = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
+        const modelos = [...new Set([
+            process.env.GEMINI_MODEL,
+            "gemini-3.1-flash-lite",
+            "gemini-3.5-flash-lite",
+            "gemini-3.8-flash",
+            "gemini-3.5-flash"
+        ].filter(Boolean))];
+
         const prompt = `És o redator editorial do blog institucional da KIKIAME, empresa angolana de Comércio Geral e Prestação de Serviços. Escreve em português claro, profissional e natural, adequado a leitores em Angola.
 
 Cria um RASCUNHO de notícia com base exclusivamente nas informações abaixo e na imagem anexada, se existir.
@@ -112,36 +119,67 @@ Regras obrigatórias:
 - Escolhe automaticamente a categoria mais adequada, de acordo com o assunto principal. A categoria deve ser exatamente uma destas: ${CATEGORIAS.join(", ")}.
 - O conteúdo deve ter entre 3 e 6 parágrafos, sem HTML.`;
 
-        const geminiResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`,
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                signal: AbortSignal.timeout(60000),
-                body: JSON.stringify({
-                    contents: [{
-                        role: "user",
-                        parts: [
-                            { text: prompt },
-                            ...(imagemData ? [{ inline_data: { mime_type: imagemMime, data: imagemData } }] : [])
-                        ]
-                    }],
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        temperature: 0.55,
-                        maxOutputTokens: 1800
-                    }
-                })
-            }
-        );
+        let geminiData = null;
+        let ultimoErro = "";
+        let ultimoStatus = 502;
+        let modeloUtilizado = null;
 
-        const geminiData = await geminiResponse.json().catch(() => ({}));
-        if (!geminiResponse.ok) {
-            console.error("Erro Gemini:", geminiResponse.status, geminiData?.error?.message || "");
-            if (geminiResponse.status === 429) {
-                return responder(res, 429, { error: "Limite temporário de utilização da IA atingido. Tenta novamente mais tarde." });
+        for (const modelo of modelos) {
+            try {
+                console.info(`A tentar gerar notícia com o modelo ${modelo}.`);
+                const resposta = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        signal: AbortSignal.timeout(35000),
+                        body: JSON.stringify({
+                            contents: [{
+                                role: "user",
+                                parts: [
+                                    { text: prompt },
+                                    ...(imagemData ? [{ inline_data: { mime_type: imagemMime, data: imagemData } }] : [])
+                                ]
+                            }],
+                            generationConfig: {
+                                responseMimeType: "application/json",
+                                temperature: 0.55,
+                                maxOutputTokens: 1800
+                            }
+                        })
+                    }
+                );
+
+                const dados = await resposta.json().catch(() => ({}));
+                if (resposta.ok) {
+                    geminiData = dados;
+                    modeloUtilizado = modelo;
+                    console.info(`Notícia gerada com sucesso pelo modelo ${modelo}.`);
+                    break;
+                }
+
+                ultimoStatus = resposta.status;
+                ultimoErro = dados?.error?.message || `HTTP ${resposta.status}`;
+                console.error(`Modelo ${modelo} falhou (${resposta.status}):`, ultimoErro);
+
+                // Só tenta outro modelo perante indisponibilidade, limite ou erro temporário do fornecedor.
+                if (![404, 429, 500, 502, 503, 504].includes(resposta.status)) {
+                    return responder(res, resposta.status === 400 ? 400 : 502, {
+                        error: "O pedido foi rejeitado pelo serviço de IA. Verifica os dados enviados e tenta novamente."
+                    });
+                }
+            } catch (erroModelo) {
+                ultimoErro = erroModelo?.message || "Falha de comunicação com o modelo.";
+                ultimoStatus = 504;
+                console.error(`Modelo ${modelo} não respondeu:`, ultimoErro);
             }
-            return responder(res, 502, { error: "A IA não conseguiu gerar o rascunho. Tenta novamente." });
+        }
+
+        if (!geminiData) {
+            console.error("Todos os modelos Gemini configurados falharam.", { ultimoStatus, ultimoErro });
+            return responder(res, 503, {
+                error: "Os modelos de IA estão temporariamente indisponíveis. Foram tentadas várias alternativas; tenta novamente mais tarde."
+            });
         }
 
         const text = geminiData?.candidates?.[0]?.content?.parts
