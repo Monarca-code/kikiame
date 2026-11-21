@@ -6,6 +6,22 @@ const client = new Client()
 
 const account = new Account(client);
 
+// Controlos para mostrar/ocultar palavras-passe sem alterar o valor inserido.
+document.querySelectorAll(".toggle-password").forEach((botao) => {
+  botao.addEventListener("click", () => {
+    const campo = document.getElementById(botao.dataset.passwordTarget);
+    if (!campo) return;
+
+    const mostrar = campo.type === "password";
+    campo.type = mostrar ? "text" : "password";
+    botao.setAttribute("aria-pressed", String(mostrar));
+    botao.setAttribute("aria-label", mostrar ? "Ocultar palavra-passe" : "Mostrar palavra-passe");
+    botao.innerHTML = mostrar
+      ? '<i class="fa-regular fa-eye-slash" aria-hidden="true"></i>'
+      : '<i class="fa-regular fa-eye" aria-hidden="true"></i>';
+  });
+});
+
 // Se já existir uma sessão válida neste navegador, abrir diretamente a área administrativa.
 // A sessão é gerida pelo Appwrite; não guardar palavras-passe no dispositivo.
 (async function restaurarSessao() {
