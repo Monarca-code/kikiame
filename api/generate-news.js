@@ -76,7 +76,6 @@ export default async function handler(req, res) {
         const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
         const tema = String(body.tema || "").trim();
         const contexto = String(body.contexto || "").trim();
-        const categoria = String(body.categoria || "").trim();
         const imagem = body.imagem && typeof body.imagem === "object" ? body.imagem : null;
         const imagemMime = String(imagem?.mimeType || "");
         const imagemData = String(imagem?.data || "");
@@ -93,16 +92,12 @@ export default async function handler(req, res) {
         if (contexto.length > 5000) {
             return responder(res, 400, { error: "O contexto não pode ultrapassar 5.000 caracteres." });
         }
-        if (!CATEGORIAS.includes(categoria)) {
-            return responder(res, 400, { error: "Seleciona uma categoria válida." });
-        }
-
         const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
         const prompt = `És o redator editorial do blog institucional da KIKIAME, empresa angolana de Comércio Geral e Prestação de Serviços. Escreve em português claro, profissional e natural, adequado a leitores em Angola.
 
 Cria um RASCUNHO de notícia com base exclusivamente nas informações abaixo e na imagem anexada, se existir.
 Tema indicado: ${tema || "Não indicado; identifica o assunto principal na imagem."}
-Categoria pretendida: ${categoria}
+A categoria deve ser escolhida automaticamente por ti, de acordo com o assunto principal e o conteúdo confirmado.
 Informações confirmadas fornecidas pelo administrador: ${contexto || "Não foram fornecidos factos adicionais."}
 
 Se receberes uma imagem, analisa-a cuidadosamente: identifica apenas elementos visíveis, texto legível e informações explicitamente apresentadas. Em cartazes, utiliza apenas dados legíveis. Em fotografias, não deduzas datas, locais, nomes, causas, resultados ou acontecimentos que a imagem não comprove. Se faltarem factos essenciais, escreve um rascunho prudente e assinala que é necessária confirmação do administrador.
@@ -114,7 +109,7 @@ Regras obrigatórias:
 - Não menciones que o texto foi escrito por IA.
 - Produz um título objetivo, um resumo curto e um conteúdo estruturado em parágrafos.
 - Devolve apenas JSON válido, sem Markdown, com as propriedades: titulo, resumo, categoria, conteudo.
-- A categoria deve ser exatamente uma destas: ${CATEGORIAS.join(", ")}.
+- Escolhe automaticamente a categoria mais adequada, de acordo com o assunto principal. A categoria deve ser exatamente uma destas: ${CATEGORIAS.join(", ")}.
 - O conteúdo deve ter entre 3 e 6 parágrafos, sem HTML.`;
 
         const geminiResponse = await fetch(
@@ -165,7 +160,7 @@ Regras obrigatórias:
             noticia = JSON.parse(cleaned);
         }
 
-        const noticiaCategoria = CATEGORIAS.includes(noticia.categoria) ? noticia.categoria : categoria;
+        const noticiaCategoria = CATEGORIAS.includes(String(noticia.categoria || "").trim()) ? String(noticia.categoria).trim() : null;
         const resultado = {
             titulo: String(noticia.titulo || "").trim().slice(0, 255),
             resumo: String(noticia.resumo || "").trim().slice(0, 1500),
@@ -173,8 +168,8 @@ Regras obrigatórias:
             conteudo: String(noticia.conteudo || "").trim().slice(0, 20000)
         };
 
-        if (!resultado.titulo || !resultado.conteudo) {
-            return responder(res, 502, { error: "O rascunho gerado está incompleto. Tenta novamente." });
+        if (!resultado.titulo || !resultado.conteudo || !resultado.categoria) {
+            return responder(res, 502, { error: "O rascunho gerado está incompleto ou a IA não selecionou uma categoria válida. Tenta novamente." });
         }
 
         return responder(res, 200, resultado);
