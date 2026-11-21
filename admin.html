@@ -32,7 +32,7 @@
             <button type="button" class="method-card method-card-ai" id="modo-ia">
                 <span class="method-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
                 <strong>Gerar com IA</strong>
-                <span>Indicar um tema e receber um rascunho editável.</span>
+                <span>A IA cria o título, resumo, conteúdo e escolhe automaticamente a categoria.</span>
                 <span class="method-action">Gerar notícia <i class="fa-solid fa-arrow-right"></i></span>
             </button>
         </section>
@@ -40,7 +40,7 @@
         <section id="gerador-ia" class="ai-panel" hidden>
             <div class="panel-heading">
                 <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Assistente de notícias</h2>
-                <p>Envia uma imagem, descreve o assunto ou utiliza os dois elementos para gerar um rascunho.</p>
+                <p>Envia uma imagem, descreve o assunto ou utiliza os dois elementos. A IA gera todos os campos e seleciona a categoria adequada.</p>
             </div>
             <div class="form-group">
                 <label for="imagem-ia">Imagem de referência (opcional)</label>
@@ -54,16 +54,6 @@
             <div class="form-group">
                 <label for="contexto-ia">Informações e factos que a IA deve utilizar</label>
                 <textarea id="contexto-ia" rows="5" maxlength="5000" placeholder="Inclua datas, locais, intervenientes, resultados e informações confirmadas. Não invente dados."></textarea>
-            </div>
-            <div class="form-group">
-                <label for="categoria-ia">Categoria pretendida</label>
-                <select id="categoria-ia">
-                    <option value="Empresa">Empresa</option>
-                    <option value="Projetos">Projetos</option>
-                    <option value="Construção Civil">Construção Civil</option>
-                    <option value="Gestão">Gestão</option>
-                    <option value="Eventos">Eventos</option>
-                </select>
             </div>
             <div class="method-actions">
                 <button type="button" class="btn-secondary" id="voltar-metodos">Voltar</button>
