@@ -77,9 +77,18 @@ export default async function handler(req, res) {
         const tema = String(body.tema || "").trim();
         const contexto = String(body.contexto || "").trim();
         const categoria = String(body.categoria || "").trim();
+        const imagem = body.imagem && typeof body.imagem === "object" ? body.imagem : null;
+        const imagemMime = String(imagem?.mimeType || "");
+        const imagemData = String(imagem?.data || "");
 
-        if (tema.length < 5 || tema.length > 180) {
+        if (tema.length > 180 || (tema.length > 0 && tema.length < 5)) {
             return responder(res, 400, { error: "O tema deve ter entre 5 e 180 caracteres." });
+        }
+        if (!tema && !imagemData) {
+            return responder(res, 400, { error: "Envia uma imagem ou indica o tema da notícia." });
+        }
+        if (imagemData && (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(imagemMime) || !/^[A-Za-z0-9+/]+={0,2}$/.test(imagemData) || imagemData.length > 4_200_000)) {
+            return responder(res, 400, { error: "Imagem inválida ou demasiado grande. Usa JPG, PNG, WebP ou GIF até 3 MB." });
         }
         if (contexto.length > 5000) {
             return responder(res, 400, { error: "O contexto não pode ultrapassar 5.000 caracteres." });
@@ -91,15 +100,17 @@ export default async function handler(req, res) {
         const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
         const prompt = `És o redator editorial do blog institucional da KIKIAME, empresa angolana de Comércio Geral e Prestação de Serviços. Escreve em português claro, profissional e natural, adequado a leitores em Angola.
 
-Cria um RASCUNHO de notícia com base exclusivamente nas informações abaixo.
-Tema: ${tema}
-Categoria: ${categoria}
+Cria um RASCUNHO de notícia com base exclusivamente nas informações abaixo e na imagem anexada, se existir.
+Tema indicado: ${tema || "Não indicado; identifica o assunto principal na imagem."}
+Categoria pretendida: ${categoria}
 Informações confirmadas fornecidas pelo administrador: ${contexto || "Não foram fornecidos factos adicionais."}
+
+Se receberes uma imagem, analisa-a cuidadosamente: identifica apenas elementos visíveis, texto legível e informações explicitamente apresentadas. Em cartazes, utiliza apenas dados legíveis. Em fotografias, não deduzas datas, locais, nomes, causas, resultados ou acontecimentos que a imagem não comprove. Se faltarem factos essenciais, escreve um rascunho prudente e assinala que é necessária confirmação do administrador.
 
 Regras obrigatórias:
 - Não inventes datas, nomes, locais, números, clientes, contratos, resultados, citações, parcerias ou acontecimentos.
-- Se faltarem factos, escreve de forma geral e prudente; não apresentes suposições como factos.
-- Não afirmes que algo foi concluído, inaugurado ou realizado se isso não estiver confirmado no contexto.
+- Não apresentes suposições como factos.
+- Não afirmes que algo foi concluído, inaugurado ou realizado se isso não estiver confirmado.
 - Não menciones que o texto foi escrito por IA.
 - Produz um título objetivo, um resumo curto e um conteúdo estruturado em parágrafos.
 - Devolve apenas JSON válido, sem Markdown, com as propriedades: titulo, resumo, categoria, conteudo.
@@ -112,7 +123,13 @@ Regras obrigatórias:
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    contents: [{ role: "user", parts: [{ text: prompt }] }],
+                    contents: [{
+                        role: "user",
+                        parts: [
+                            { text: prompt },
+                            ...(imagemData ? [{ inline_data: { mime_type: imagemMime, data: imagemData } }] : [])
+                        ]
+                    }],
                     generationConfig: {
                         responseMimeType: "application/json",
                         temperature: 0.55,
