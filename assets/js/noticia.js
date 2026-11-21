@@ -23,6 +23,15 @@ function formatarData(valor) {
     });
 }
 
+function obterImagens(noticia) {
+    try {
+        const lista = JSON.parse(noticia.imagens_urls || "[]");
+        if (Array.isArray(lista)) return lista.map(urlImagemSegura).filter(Boolean);
+    } catch (_) {}
+    const antiga = urlImagemSegura(noticia.imagem_url);
+    return antiga ? [antiga] : [];
+}
+
 function urlImagemSegura(valor) {
     if (!valor) return "";
     try {
@@ -58,11 +67,12 @@ async function carregarNoticia() {
         const titulo = escaparHTML(noticia.titulo || "Notícia KIKIAME");
         const resumo = escaparHTML(noticia.resumo || "");
         const conteudo = escaparHTML(noticia.conteudo || "");
-        const imagem = urlImagemSegura(noticia.imagem_url);
+        const imagens = obterImagens(noticia);
+        const galeria = imagens.length ? `<div class="single-news-gallery">${imagens.map((url, indice) => `<img src="${escaparHTML(url)}" alt="${titulo} — imagem ${indice + 1}" loading="lazy">`).join("")}</div>` : "";
 
         container.innerHTML = `
             <article class="single-news-content">
-                ${imagem ? `<div class="single-news-image"><img src="${escaparHTML(imagem)}" alt="${titulo}"></div>` : ""}
+                ${galeria}
                 <div class="single-news-info">
                     <span class="news-category">${escaparHTML(noticia.categoria || "Geral")}</span>
                     <span class="news-date"><i class="fa-regular fa-calendar" aria-hidden="true"></i> ${escaparHTML(formatarData(noticia.data_publicacao))}</span>
