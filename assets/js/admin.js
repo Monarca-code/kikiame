@@ -94,7 +94,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     botaoGerar.addEventListener("click", async () => {
         const tema = document.getElementById("tema-ia").value.trim();
         const contexto = document.getElementById("contexto-ia").value.trim();
-        const categoria = document.getElementById("categoria-ia").value;
         const imagemIA = document.getElementById("imagem-ia");
         const ficheiroImagem = imagemIA.files?.[0] || null;
         const tiposImagem = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -134,7 +133,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 body: JSON.stringify({
                     tema,
                     contexto,
-                    categoria,
                     imagem: ficheiroImagem ? {
                         mimeType: ficheiroImagem.type,
                         data: await new Promise((resolve, reject) => {
@@ -155,7 +153,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.getElementById("titulo").value = dados.titulo || "";
             document.getElementById("resumo").value = dados.resumo || "";
             document.getElementById("conteudo").value = dados.conteudo || "";
-            document.getElementById("categoria").value = dados.categoria || categoria;
+            document.getElementById("categoria").value = dados.categoria || "";
 
             // Reutiliza a imagem analisada como imagem principal da notícia.
             if (ficheiroImagem) {
