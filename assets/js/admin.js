@@ -95,10 +95,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         const tema = document.getElementById("tema-ia").value.trim();
         const contexto = document.getElementById("contexto-ia").value.trim();
         const categoria = document.getElementById("categoria-ia").value;
+        const imagemIA = document.getElementById("imagem-ia");
+        const ficheiroImagem = imagemIA.files?.[0] || null;
+        const tiposImagem = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
-        if (tema.length < 5) {
-            mostrarMensagem("Indica um tema mais específico (mínimo de 5 caracteres).", "message-error");
+        if (tema.length > 180 || (tema.length > 0 && tema.length < 5)) {
+            mostrarMensagem("O tema deve ter entre 5 e 180 caracteres.", "message-error");
             document.getElementById("tema-ia").focus();
+            return;
+        }
+        if (!tema && !ficheiroImagem) {
+            mostrarMensagem("Envia uma imagem ou indica o tema da notícia.", "message-error");
+            imagemIA.focus();
+            return;
+        }
+        if (ficheiroImagem && !tiposImagem.includes(ficheiroImagem.type)) {
+            mostrarMensagem("Formato não suportado. Usa JPG, PNG, WebP ou GIF.", "message-error");
+            return;
+        }
+        if (ficheiroImagem && ficheiroImagem.size > 3 * 1024 * 1024) {
+            mostrarMensagem("A imagem para análise não pode ultrapassar 3 MB.", "message-error");
             return;
         }
 
@@ -115,7 +131,20 @@ document.addEventListener("DOMContentLoaded", async () => {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${jwtResult.jwt}`
                 },
-                body: JSON.stringify({ tema, contexto, categoria })
+                body: JSON.stringify({
+                    tema,
+                    contexto,
+                    categoria,
+                    imagem: ficheiroImagem ? {
+                        mimeType: ficheiroImagem.type,
+                        data: await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+                            reader.onerror = () => reject(new Error("Não foi possível ler a imagem selecionada."));
+                            reader.readAsDataURL(ficheiroImagem);
+                        })
+                    } : null
+                })
             });
 
             const dados = await resposta.json().catch(() => ({}));
@@ -127,6 +156,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.getElementById("resumo").value = dados.resumo || "";
             document.getElementById("conteudo").value = dados.conteudo || "";
             document.getElementById("categoria").value = dados.categoria || categoria;
+
+            // Reutiliza a imagem analisada como imagem principal da notícia.
+            if (ficheiroImagem) {
+                const transferencia = new DataTransfer();
+                transferencia.items.add(ficheiroImagem);
+                document.getElementById("imagem").files = transferencia.files;
+            }
 
             painelIA.hidden = true;
             formulario.hidden = false;
@@ -206,6 +242,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             formulario.reset();
             document.getElementById("tema-ia").value = "";
             document.getElementById("contexto-ia").value = "";
+            document.getElementById("imagem-ia").value = "";
             mostrarEscolha();
             mostrarMensagem("Notícia publicada com sucesso! ✅", "message-success");
         } catch (erro) {
