@@ -99,9 +99,6 @@ export default async function handler(req, res) {
         if (!tema && !temImagens) {
             return responder(res, 400, { error: "Envia uma imagem ou indica o tema da notícia." });
         }
-        if (imagemData && (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(imagemMime) || !/^[A-Za-z0-9+/]+={0,2}$/.test(imagemData) || imagemData.length > 4_200_000)) {
-            return responder(res, 400, { error: "Imagem inválida ou demasiado grande. Usa JPG, PNG, WebP ou GIF até 3 MB." });
-        }
         if (contexto.length > 5000) {
             return responder(res, 400, { error: "O contexto não pode ultrapassar 5.000 caracteres." });
         }
