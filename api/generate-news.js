@@ -76,14 +76,27 @@ export default async function handler(req, res) {
         const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
         const tema = String(body.tema || "").trim();
         const contexto = String(body.contexto || "").trim();
-        const imagem = body.imagem && typeof body.imagem === "object" ? body.imagem : null;
-        const imagemMime = String(imagem?.mimeType || "");
-        const imagemData = String(imagem?.data || "");
+        const imagens = Array.isArray(body.imagens) ? body.imagens : (body.imagem ? [body.imagem] : []);
+        if (imagens.length > 4) return responder(res, 400, { error: "Podes enviar no máximo 4 imagens para análise." });
+        const imagensValidadas = imagens.map((imagem, indice) => ({
+            mimeType: String(imagem?.mimeType || ""),
+            data: String(imagem?.data || ""),
+            indice: indice + 1
+        }));
+        const imagemInvalida = imagensValidadas.find(imagem => imagem.data && (
+            !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(imagem.mimeType) ||
+            !/^[A-Za-z0-9+/]+={0,2}$/.test(imagem.data) || imagem.data.length > 1_000_000
+        ));
+        const totalBytesBase64 = imagensValidadas.reduce((total, imagem) => total + imagem.data.length, 0);
+        if (imagemInvalida || totalBytesBase64 > 3_800_000) {
+            return responder(res, 400, { error: "Imagem inválida ou demasiado grande. Usa até 4 imagens JPG, PNG, WebP ou GIF, com no máximo 700 KB cada." });
+        }
+        const temImagens = imagensValidadas.some(imagem => imagem.data);
 
         if (tema.length > 180 || (tema.length > 0 && tema.length < 5)) {
             return responder(res, 400, { error: "O tema deve ter entre 5 e 180 caracteres." });
         }
-        if (!tema && !imagemData) {
+        if (!tema && !temImagens) {
             return responder(res, 400, { error: "Envia uma imagem ou indica o tema da notícia." });
         }
         if (imagemData && (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(imagemMime) || !/^[A-Za-z0-9+/]+={0,2}$/.test(imagemData) || imagemData.length > 4_200_000)) {
@@ -102,12 +115,12 @@ export default async function handler(req, res) {
 
         const prompt = `És o redator editorial do blog institucional da KIKIAME, empresa angolana de Comércio Geral e Prestação de Serviços. Escreve em português claro, profissional e natural, adequado a leitores em Angola.
 
-Cria um RASCUNHO de notícia com base exclusivamente nas informações abaixo e na imagem anexada, se existir.
+Cria um RASCUNHO de notícia com base exclusivamente nas informações abaixo e em TODAS as imagens anexadas, se existirem. Analisa cada imagem individualmente e cruza apenas os factos que forem consistentes entre elas.
 Tema indicado: ${tema || "Não indicado; identifica o assunto principal na imagem."}
 A categoria deve ser escolhida automaticamente por ti, de acordo com o assunto principal e o conteúdo confirmado.
 Informações confirmadas fornecidas pelo administrador: ${contexto || "Não foram fornecidos factos adicionais."}
 
-Se receberes uma imagem, analisa-a cuidadosamente: identifica apenas elementos visíveis, texto legível e informações explicitamente apresentadas. Em cartazes, utiliza apenas dados legíveis. Em fotografias, não deduzas datas, locais, nomes, causas, resultados ou acontecimentos que a imagem não comprove. Se faltarem factos essenciais, escreve um rascunho prudente e assinala que é necessária confirmação do administrador.
+Se receberes várias imagens, analisa TODAS cuidadosamente: identifica em cada uma apenas elementos visíveis, texto legível e informações explicitamente apresentadas. Cruza imagens para reconhecer o mesmo evento ou assunto, mas não inventes dados ausentes nem combines contextos diferentes como se fossem um só. Em cartazes, utiliza apenas dados legíveis. Em fotografias, não deduzas datas, locais, nomes, causas, resultados ou acontecimentos que as imagens não comprovem. Se faltarem factos essenciais, escreve um rascunho prudente e assinala que é necessária confirmação do administrador.
 
 Regras obrigatórias:
 - Não inventes datas, nomes, locais, números, clientes, contratos, resultados, citações, parcerias ou acontecimentos.
@@ -138,7 +151,7 @@ Regras obrigatórias:
                                 role: "user",
                                 parts: [
                                     { text: prompt },
-                                    ...(imagemData ? [{ inline_data: { mime_type: imagemMime, data: imagemData } }] : [])
+                                    ...imagensValidadas.filter(imagem => imagem.data).map(imagem => ({ inline_data: { mime_type: imagem.mimeType, data: imagem.data } }))
                                 ]
                             }],
                             generationConfig: {
