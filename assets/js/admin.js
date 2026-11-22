@@ -66,6 +66,138 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
+    // Melhoria manual: as versões geradas só substituem os originais após confirmação.
+    document.querySelectorAll(".btn-enhance-images").forEach(botao => {
+        botao.addEventListener("click", async () => {
+            const input = document.getElementById(botao.dataset.imageInput);
+            const preview = document.getElementById(botao.dataset.previewTarget);
+            const originais = Array.from(input?.files || []);
+            const formatos = ["image/jpeg", "image/png", "image/webp"];
+
+            if (!originais.length) {
+                mostrarMensagem("Seleciona primeiro pelo menos uma imagem.", "message-error");
+                input?.focus();
+                return;
+            }
+            if (originais.length > 4) {
+                mostrarMensagem("Podes melhorar no máximo 4 imagens de cada vez.", "message-error");
+                return;
+            }
+            if (originais.some(file => !formatos.includes(file.type))) {
+                mostrarMensagem("Para melhorar, utiliza JPG, PNG ou WebP. Os GIF continuam disponíveis para publicação sem alterações.", "message-error");
+                return;
+            }
+            if (originais.some(file => file.size > 700 * 1024)) {
+                mostrarMensagem("Cada imagem deve ter no máximo 700 KB para ser melhorada.", "message-error");
+                return;
+            }
+
+            botao.disabled = true;
+            botao.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> A melhorar imagens...';
+            preview.replaceChildren();
+            mostrarMensagem("A IA está a melhorar as imagens. Mantém esta página aberta.", "message-info");
+
+            try {
+                const jwtResult = await account.createJWT();
+                const melhoradas = [];
+
+                for (let indice = 0; indice < originais.length; indice++) {
+                    const arquivo = originais[indice];
+                    mostrarMensagem(`A melhorar imagem ${indice + 1} de ${originais.length}...`, "message-info");
+                    const base64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+                        reader.onerror = () => reject(new Error(`Não foi possível ler ${arquivo.name}.`));
+                        reader.readAsDataURL(arquivo);
+                    });
+
+                    const resposta = await fetch("/api/enhance-image", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${jwtResult.jwt}`
+                        },
+                        body: JSON.stringify({ mimeType: arquivo.type, data: base64 })
+                    });
+                    const dados = await resposta.json().catch(() => ({}));
+                    if (!resposta.ok || !dados.data) {
+                        throw new Error(dados.error || `Não foi possível melhorar ${arquivo.name}.`);
+                    }
+
+                    const mimeType = ["image/png", "image/jpeg", "image/webp"].includes(dados.mimeType)
+                        ? dados.mimeType : "image/png";
+                    const bytes = Uint8Array.from(atob(dados.data), caractere => caractere.charCodeAt(0));
+                    const extensao = mimeType === "image/jpeg" ? "jpg" : mimeType === "image/webp" ? "webp" : "png";
+                    const nome = arquivo.name.replace(/\.[^.]+$/, "") + "-melhorada." + extensao;
+                    const melhorada = new File([new Blob([bytes], { type: mimeType })], nome, { type: mimeType });
+                    melhoradas.push({ original: arquivo, melhorada, originalUrl: URL.createObjectURL(arquivo), melhoradaUrl: URL.createObjectURL(melhorada) });
+                }
+
+                const comparacao = document.createElement("div");
+                comparacao.className = "image-enhancement-grid";
+                melhoradas.forEach((item, indice) => {
+                    const cartao = document.createElement("div");
+                    cartao.className = "image-enhancement-card";
+                    const titulo = document.createElement("strong");
+                    titulo.textContent = `Imagem ${indice + 1}`;
+                    const imagens = document.createElement("div");
+                    imagens.className = "image-enhancement-pair";
+                    [[item.originalUrl, "Original"], [item.melhoradaUrl, "Melhorada"]].forEach(([url, legenda]) => {
+                        const coluna = document.createElement("div");
+                        const imagem = document.createElement("img");
+                        imagem.src = url;
+                        imagem.alt = legenda;
+                        const texto = document.createElement("small");
+                        texto.textContent = legenda;
+                        coluna.append(imagem, texto);
+                        imagens.append(coluna);
+                    });
+                    cartao.append(titulo, imagens);
+                    comparacao.append(cartao);
+                });
+
+                const acoes = document.createElement("div");
+                acoes.className = "image-enhancement-actions";
+                const aceitar = document.createElement("button");
+                aceitar.type = "button";
+                aceitar.className = "btn-ai";
+                aceitar.textContent = "Usar versões melhoradas";
+                const rejeitar = document.createElement("button");
+                rejeitar.type = "button";
+                rejeitar.className = "btn-secondary";
+                rejeitar.textContent = "Manter originais";
+                aceitar.addEventListener("click", () => {
+                    const transferencia = new DataTransfer();
+                    melhoradas.forEach(item => transferencia.items.add(item.melhorada));
+                    input.files = transferencia.files;
+                    mostrarMensagem("Versões melhoradas selecionadas. Ainda podes rever as imagens antes de publicar.", "message-success");
+                    preview.replaceChildren();
+                    melhoradas.forEach(item => {
+                        URL.revokeObjectURL(item.originalUrl);
+                        URL.revokeObjectURL(item.melhoradaUrl);
+                    });
+                });
+                rejeitar.addEventListener("click", () => {
+                    mostrarMensagem("As imagens originais foram mantidas.", "message-info");
+                    preview.replaceChildren();
+                    melhoradas.forEach(item => {
+                        URL.revokeObjectURL(item.originalUrl);
+                        URL.revokeObjectURL(item.melhoradaUrl);
+                    });
+                });
+                acoes.append(aceitar, rejeitar);
+                preview.append(comparacao, acoes);
+                mostrarMensagem("Comparação pronta. Escolhe se queres utilizar as versões melhoradas ou manter os originais.", "message-success");
+            } catch (erro) {
+                console.error("Erro ao melhorar imagens:", erro);
+                mostrarMensagem(erro.message || "Não foi possível melhorar as imagens. Os originais foram mantidos.", "message-error");
+            } finally {
+                botao.disabled = false;
+                botao.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Melhorar imagens';
+            }
+        });
+    });
+
     const mostrarEscolha = () => {
         escolhaMetodo.hidden = false;
         painelIA.hidden = true;
