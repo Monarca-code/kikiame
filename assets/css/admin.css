@@ -617,3 +617,85 @@
     outline: 2px solid #F58220;
     outline-offset: 1px;
 }
+
+
+/* Melhoria manual de imagens */
+.btn-enhance-images {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1px solid #f58220;
+    border-radius: 9px;
+    background: #fff7ef;
+    color: #9a4800;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.btn-enhance-images:hover { background: #ffeddc; }
+.btn-enhance-images:disabled { opacity: .6; cursor: wait; }
+.image-enhancement-preview { display: grid; gap: 12px; }
+.image-enhancement-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+.image-enhancement-card {
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid #e1e7ef;
+    border-radius: 10px;
+    background: #fff;
+}
+.image-enhancement-card > strong {
+    display: block;
+    margin-bottom: 9px;
+    color: #071b36;
+    font-size: 13px;
+}
+.image-enhancement-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.image-enhancement-pair > div { min-width: 0; }
+.image-enhancement-pair img {
+    display: block;
+    width: 100%;
+    height: 125px;
+    object-fit: contain;
+    border-radius: 7px;
+    background: #edf1f5;
+}
+.image-enhancement-pair small {
+    display: block;
+    margin-top: 5px;
+    color: #526174;
+    font-size: 11px;
+    text-align: center;
+}
+.image-enhancement-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+}
+.image-enhancement-actions button {
+    padding: 10px 13px;
+    border: 0;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.image-enhancement-actions .btn-ai { background: #f58220; color: #071b36; }
+.image-enhancement-actions .btn-secondary { background: #e9edf2; color: #24364b; }
+@media (max-width: 480px) {
+    .image-enhancement-grid { grid-template-columns: 1fr; }
+    .image-enhancement-pair img { height: 110px; }
+    .image-enhancement-actions { flex-direction: column; }
+    .image-enhancement-actions button { width: 100%; }
+}
