@@ -57,9 +57,11 @@ function urlImagemSegura(valor) {
 
 function criarFiltros() {
     if (!categoryFilters) return;
-    const categorias = [...new Set(
-        todasNoticias.map(n => String(n.categoria || "").trim()).filter(Boolean)
-    )].sort((a, b) => a.localeCompare(b, "pt"));
+    const categoriasFixas = ["Empresa", "Projetos", "Construção Civil", "Gestão", "Eventos"];
+    const categorias = [...new Set([
+        ...categoriasFixas,
+        ...todasNoticias.map(n => String(n.categoria || "").trim()).filter(Boolean)
+    ])].sort((a, b) => a.localeCompare(b, "pt"));
 
     categoryFilters.innerHTML = [
         '<button class="category-filter active" type="button" data-category="Todas">Todas</button>',
