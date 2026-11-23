@@ -70,15 +70,7 @@ function criarFiltros() {
         )
     ].join("");
 
-    categoryFilters.querySelectorAll(".category-filter").forEach(botao => {
-        botao.addEventListener("click", () => {
-            categoriaAtiva = botao.dataset.category || "Todas";
-            categoryFilters.querySelectorAll(".category-filter").forEach(item =>
-                item.classList.toggle("active", item === botao)
-            );
-            mostrarNoticias();
-        });
-    });
+
 }
 
 function obterNoticiasFiltradas() {
@@ -150,6 +142,16 @@ function mostrarNoticias() {
             </article>`;
     }).join("");
 }
+
+categoryFilters?.addEventListener("click", evento => {
+    const botao = evento.target.closest(".category-filter");
+    if (!botao || !categoryFilters.contains(botao)) return;
+    categoriaAtiva = botao.dataset.category || "Todas";
+    categoryFilters.querySelectorAll(".category-filter").forEach(item =>
+        item.classList.toggle("active", item === botao)
+    );
+    mostrarNoticias();
+});
 
 async function carregarNoticias() {
     if (!newsGrid) return;
