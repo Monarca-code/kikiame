@@ -626,3 +626,40 @@
         padding-bottom: 8px;
     }
 }
+
+
+/* Ajustes específicos para a barra de categorias em ecrãs pequenos */
+@media (max-width: 600px) {
+    .news-category-bar {
+        margin-top: 24px !important;
+        margin-bottom: 30px !important;
+        padding-top: 12px !important;
+        overflow: visible !important;
+    }
+
+    .news-category-filters {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: flex-start !important;
+        align-items: center !important;
+        gap: 10px !important;
+        width: 100%;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 0 0 4px !important;
+    }
+
+    .news-category-filters .category-filter {
+        display: inline-flex !important;
+        flex: 0 0 auto !important;
+        min-height: 40px;
+        white-space: nowrap;
+        padding: 9px 15px !important;
+        font-size: 13px !important;
+    }
+
+    .news-toolbar {
+        margin-top: 0 !important;
+    }
+}
